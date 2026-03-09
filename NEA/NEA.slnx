@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../MonoGameLib/MonoGameLibrary.csproj" />
+  <Project Path="NEA.csproj" />
+</Solution>
