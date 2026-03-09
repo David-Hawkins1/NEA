@@ -21,7 +21,7 @@ public class Rigidbody
     public float Mass { get; set; } = 1.0f;
     // How much the object is affected by gravity.
     public float GravityScale { get; set; } = 1.0f;
-    // Is the object affected by forces?
+    // Is the object immovable and unaffected by forces?
     public bool IsKinematic { get; set; } = false;
     // Is the object affected by gravity?
     public bool UseGravity { get; set; } = true;
