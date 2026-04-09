@@ -31,26 +31,34 @@ public class Rigidbody
 
     // The drag applied to the object.
     public float Drag { get; set; } = 0f;
+    public float Friction { get; set; } = 0f;
     // Gravity Constant
     public float Gravity { get; set; } = 1200f;
     // Temporary force application value
     private Vector2 _appliedForce = Vector2.Zero;
     public float MaxSpeed = 600f;
+    public float MaxFallSpeed = 1000f;
 
+    //Collider properties
+    public float Height { get; private set; }
+    public float Width { get; private set; }
 
-    // Collider
-    public Collider Collider { get; private set; }
+    // Platformer properties
+    public bool IsGrounded { get; set; }
+    public bool IsTouchingWall { get; set; }
 
     // Constructors
     public Rigidbody(Vector2 position, float width, float height)
     {
         Position = position;
-        Collider = new Collider(this, width, height);
+        Height = height;
+        Width = width;
     }
     public Rigidbody(Vector2 position, float width, float height, float gravityScale)
     {
         Position = position;
-        Collider = new Collider(this, width, height);
+        Height = height;
+        Width = width;
         GravityScale = gravityScale;
     }
 
@@ -66,15 +74,28 @@ public class Rigidbody
         }
         Velocity += Acceleration * deltaTime;
         Velocity += (_appliedForce / Mass) * deltaTime;
-        Velocity *= 1f - (Drag * deltaTime);
-        Velocity = Vector2.Clamp(Velocity, new Vector2(-MaxSpeed, -MaxSpeed), new Vector2(MaxSpeed, MaxSpeed));
+        if (IsGrounded) { Velocity *= 1f - (Friction * deltaTime);}
+        else { Velocity *= 1f - (Drag * deltaTime); }
+        
+        if (Velocity.Length() > MaxSpeed)
+        {
+            Velocity = Vector2.Normalize(Velocity) * MaxSpeed;
+        }
         Position += Velocity * deltaTime;
         Acceleration = Vector2.Zero;
         _appliedForce = Vector2.Zero;
+        if (Velocity.Y > MaxFallSpeed)
+        {
+            Velocity = new Vector2(Velocity.X, MaxFallSpeed);
+        }
     }
     public void AddForce(Vector2 force)
     {
         _appliedForce += force;
+    }
+    public void AddImpulse(Vector2 impulse)
+    {
+        Velocity += impulse / Mass;
     }
     public void SetVelocity(Vector2 velocity)
     {
@@ -90,5 +111,28 @@ public class Rigidbody
     {
         Acceleration = Vector2.Zero;
         _appliedForce = Vector2.Zero;
+    }
+
+    //Collision Methods
+    public Rectangle Bounds
+    {
+        get
+        {
+            return new Rectangle(
+                (int)(Position.X - Width / 2),
+                (int)(Position.Y - Height / 2),
+                (int)Width,
+                (int)Height
+            );
+        }
+    }
+    public void StopX()
+    {
+        Velocity = new Vector2(0, Velocity.Y);
+    }
+
+    public void StopY()
+    {
+        Velocity = new Vector2(Velocity.X, 0);
     }
 }

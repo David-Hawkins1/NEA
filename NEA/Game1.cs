@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Physics;
 
-namespace PlatformerTest;
+namespace NEA;
 
 public class Game1 : Game
 {
@@ -103,7 +103,7 @@ public class Game1 : Game
     }
     private void DrawBody(Rigidbody body, Color color)
     {
-        _spriteBatch.Draw(pixel, body.Bounds, color);
+        _spriteBatch.Draw(pixel, body.Collider.Bounds, color);
     }
 
 }
