@@ -36,8 +36,9 @@ public class Rigidbody
     public float Gravity { get; set; } = 1200f;
     // Temporary force application value
     private Vector2 _appliedForce = Vector2.Zero;
-    public float MaxSpeed = 600f;
-    public float MaxFallSpeed = 1000f;
+    public float MaxGroundSpeed { get; set; } = 600f;
+    public float MaxAirSpeed { get; set; } = 450f;
+    public float MaxFallSpeed { get; set; } = 1000f;    
 
     //Collider properties
     public float Height { get; private set; }
@@ -74,20 +75,26 @@ public class Rigidbody
         }
         Velocity += Acceleration * deltaTime;
         Velocity += (_appliedForce / Mass) * deltaTime;
-        if (IsGrounded) { Velocity *= 1f - (Friction * deltaTime);}
-        else { Velocity *= 1f - (Drag * deltaTime); }
-        
-        if (Velocity.Length() > MaxSpeed)
+        if (IsGrounded)
         {
-            Velocity = Vector2.Normalize(Velocity) * MaxSpeed;
+            float frictionFactor =
+                Math.Max(0f, 1f - Friction * deltaTime);
+            Velocity *= frictionFactor;
         }
-        Position += Velocity * deltaTime;
+        else
+        {
+            float dragFactor =
+                Math.Max(0f, 1f - Drag * deltaTime);
+            Velocity =new Vector2(Velocity.X * dragFactor, Velocity.Y);
+        }
+        
+        Velocity = new Vector2(
+            MathHelper.Clamp(Velocity.X, -MaxGroundSpeed, MaxGroundSpeed),
+            MathHelper.Clamp(Velocity.Y, -MaxFallSpeed, MaxFallSpeed)
+            );
+        Position += Velocity * deltaTime; //Semi-Implicit Euler Integration
         Acceleration = Vector2.Zero;
         _appliedForce = Vector2.Zero;
-        if (Velocity.Y > MaxFallSpeed)
-        {
-            Velocity = new Vector2(Velocity.X, MaxFallSpeed);
-        }
     }
     public void AddForce(Vector2 force)
     {

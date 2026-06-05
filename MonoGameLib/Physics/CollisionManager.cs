@@ -22,7 +22,10 @@ public class CollisionManager
     private void Resolve(Rigidbody rb, Rectangle tile)
     {
         Rectangle overlap = Rectangle.Intersect(rb.Bounds, tile);
-
+        if (overlap.Width <= 0 || overlap.Height <= 0)
+        {
+            return;
+        }
         if (overlap.Width < overlap.Height)
         {
             // Horizontal collision
