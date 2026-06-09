@@ -40,26 +40,18 @@ public class Rigidbody
     public float MaxAirSpeed { get; set; } = 450f;
     public float MaxFallSpeed { get; set; } = 1000f;    
 
-    //Collider properties
-    public float Height { get; private set; }
-    public float Width { get; private set; }
-
     // Platformer properties
     public bool IsGrounded { get; set; }
     public bool IsTouchingWall { get; set; }
 
     // Constructors
-    public Rigidbody(Vector2 position, float width, float height)
+    public Rigidbody(Vector2 position)
     {
         Position = position;
-        Height = height;
-        Width = width;
     }
-    public Rigidbody(Vector2 position, float width, float height, float gravityScale)
+    public Rigidbody(Vector2 position, float gravityScale)
     {
         Position = position;
-        Height = height;
-        Width = width;
         GravityScale = gravityScale;
     }
 
@@ -118,20 +110,6 @@ public class Rigidbody
     {
         Acceleration = Vector2.Zero;
         _appliedForce = Vector2.Zero;
-    }
-
-    //Collision Methods
-    public Rectangle Bounds
-    {
-        get
-        {
-            return new Rectangle(
-                (int)(Position.X - Width / 2),
-                (int)(Position.Y - Height / 2),
-                (int)Width,
-                (int)Height
-            );
-        }
     }
     public void StopX()
     {

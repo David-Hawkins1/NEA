@@ -42,10 +42,6 @@ public class Game1 : Game
             32,
             32
         );
-        player.GravityScale = 1f;
-        player.UseGravity = true;
-        player.Drag = 0.1f;
-        player.Friction = 0.3f;
 
         // Static ground
         ground = new Rigidbody(
