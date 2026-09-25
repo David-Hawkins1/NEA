@@ -1,31 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 
 namespace MonoGameLibrary.Physics;
+
 public class CollisionManager
 {
-    public void ResolveCol(Rigidbody rb, List<Rectangle> worldColliders)
+    public void ResolveCol(PhysicsObject obj, List<Rectangle> worldColliders)
     {
-        rb.IsGrounded = false;
-        rb.IsTouchingWall = false;
-        foreach (var collider in worldColliders)
-        {
-            Resolve(rb, collider);
-        }
+        obj.Rigidbody.IsGrounded = false;
+        obj.Rigidbody.IsTouchingWall = false;
 
+        foreach (var tile in worldColliders)
+        {
+            Resolve(obj, tile);
+        }
     }
 
-    private void Resolve(Rigidbody rb, Rectangle tile)
+    private void Resolve(PhysicsObject obj, Rectangle tile)
     {
-        Rectangle overlap = Rectangle.Intersect(rb.Bounds, tile);
+        Rectangle overlap = Rectangle.Intersect(obj.Bounds, tile);
         if (overlap.Width <= 0 || overlap.Height <= 0)
         {
             return;
         }
+
+        Rigidbody rb = obj.Rigidbody;
+
         if (overlap.Width < overlap.Height)
         {
             // Horizontal collision

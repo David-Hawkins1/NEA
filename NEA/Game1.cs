@@ -2,7 +2,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Physics;
-using MonoGameLibrary.Graphics;
 using System.Collections.Generic;
 
 namespace NEA;
@@ -11,102 +10,110 @@ public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
+    private Texture2D _pixel;
 
-    private Texture2D pixel;
-    private Texture2D spriteTexture;
-    private Sprite playerSprite;
+    private PhysicsObject _player;
+    private List<PhysicsObject> _platforms;
+    private List<Rectangle> _worldColliders;
+    private CollisionManager _collisionManager;
 
-    private Rigidbody player;
-    private Rigidbody ground;
-    private List<Rigidbody> platforms;
-    private List<Rectangle> worldColliders;
+    private const float MoveSpeed = 200f;
+    private const float JumpImpulse = -400f;
 
-    private CollisionManager collisionManager;
+    // Virtual resolution: everything is drawn at this size, then scaled to fit the window.
+    private const int VirtualWidth = 1600;
+    private const int VirtualHeight = 1200; // 4:3
+
+    private RenderTarget2D _renderTarget;
+    private Rectangle _destinationRectangle;
 
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
+
+        // Start windowed at the virtual resolution; window is resizable so it can
+        // expand to fit larger screens.
+        _graphics.PreferredBackBufferWidth = VirtualWidth;
+        _graphics.PreferredBackBufferHeight = VirtualHeight;
+        Window.AllowUserResizing = true;
+        Window.ClientSizeChanged += OnResize;
+
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
     }
 
     protected override void Initialize()
     {
-        collisionManager = new CollisionManager();
-        platforms = new List<Rigidbody>();
-        worldColliders = new List<Rectangle>();
+        _collisionManager = new CollisionManager();
+        _platforms = new List<PhysicsObject>();
+        _worldColliders = new List<Rectangle>();
 
-        // Dynamic player
-        player = new Rigidbody(
-            new Vector2(100, 100),
-            32,
-            32
-        );
+        // Player: dynamic, 32x32
+        _player = new PhysicsObject(new Vector2(100, 100), 32, 32);
 
-        // Static ground
-        ground = new Rigidbody(
-            new Vector2(400, 750),
-            800,
-            50
-        );
-        ground.IsKinematic = true;
-        platforms.Add(ground);
-        worldColliders.Add(ground.Bounds);
-
-        // Platform 1
-        Rigidbody platform1 = new Rigidbody(
-            new Vector2(200, 600),
-            200,
-            20
-        );
-        platform1.IsKinematic = true;
-        platforms.Add(platform1);
-        worldColliders.Add(platform1.Bounds);
-
-        // Platform 2
-        Rigidbody platform2 = new Rigidbody(
-            new Vector2(600, 500),
-            200,
-            20
-        );
-        platform2.IsKinematic = true;
-        platforms.Add(platform2);
-        worldColliders.Add(platform2.Bounds);
-
-        // Platform 3
-        Rigidbody platform3 = new Rigidbody(
-            new Vector2(150, 400),
-            150,
-            20
-        );
-        platform3.IsKinematic = true;
-        platforms.Add(platform3);
-        worldColliders.Add(platform3.Bounds);
-
-        // Platform 4
-        Rigidbody platform4 = new Rigidbody(
-            new Vector2(650, 300),
-            150,
-            20
-        );
-        platform4.IsKinematic = true;
-        platforms.Add(platform4);
-        worldColliders.Add(platform4.Bounds);
+        // Platforms, positioned in virtual-resolution space (1600x1200)
+        AddPlatform(new Vector2(800, 1100), 1400, 50); // ground
+        AddPlatform(new Vector2(400, 800), 300, 30);
+        AddPlatform(new Vector2(1100, 550), 300, 30);
 
         base.Initialize();
+    }
+
+    private void AddPlatform(Vector2 position, float width, float height)
+    {
+        PhysicsObject platform = new PhysicsObject(position, width, height)
+        {
+            Rigidbody = { IsKinematic = true }
+        };
+        _platforms.Add(platform);
+        _worldColliders.Add(platform.Bounds);
     }
 
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        pixel = new Texture2D(GraphicsDevice, 1, 1);
-        pixel.SetData(new[] { Color.White });
+        _pixel = new Texture2D(GraphicsDevice, 1, 1);
+        _pixel.SetData(new[] { Color.White });
 
-        spriteTexture = Content.Load<Texture2D>("images/sprite");
-        TextureRegion region = new TextureRegion(spriteTexture, 0, 0, (int)player.Width, (int)player.Height);
-        playerSprite = new Sprite(region);
-        playerSprite.CenterOrigin();
+        _renderTarget = new RenderTarget2D(GraphicsDevice, VirtualWidth, VirtualHeight);
+        RecalculateDestinationRectangle();
+    }
+
+    private void OnResize(object sender, System.EventArgs e)
+    {
+        RecalculateDestinationRectangle();
+    }
+
+    // Computes the largest 4:3 rectangle that fits inside the current window,
+    // centered, producing letterbox or pillarbox bars as needed.
+    private void RecalculateDestinationRectangle()
+    {
+        int windowWidth = GraphicsDevice.PresentationParameters.BackBufferWidth;
+        int windowHeight = GraphicsDevice.PresentationParameters.BackBufferHeight;
+
+        float targetAspect = VirtualWidth / (float)VirtualHeight;
+        float windowAspect = windowWidth / (float)windowHeight;
+
+        int destWidth, destHeight;
+
+        if (windowAspect > targetAspect)
+        {
+            // Window is wider than 4:3 -> pillarbox (bars on left/right)
+            destHeight = windowHeight;
+            destWidth = (int)(windowHeight * targetAspect);
+        }
+        else
+        {
+            // Window is taller than 4:3 -> letterbox (bars on top/bottom)
+            destWidth = windowWidth;
+            destHeight = (int)(windowWidth / targetAspect);
+        }
+
+        int x = (windowWidth - destWidth) / 2;
+        int y = (windowHeight - destHeight) / 2;
+
+        _destinationRectangle = new Rectangle(x, y, destWidth, destHeight);
     }
 
     protected override void Update(GameTime gameTime)
@@ -116,63 +123,47 @@ public class Game1 : Game
         if (keyboard.IsKeyDown(Keys.Escape))
             Exit();
 
-        float speed = 200f;
+        Rigidbody playerRb = _player.Rigidbody;
 
-        // Horizontal movement
         if (keyboard.IsKeyDown(Keys.A))
-        {
-            player.Velocity = new Vector2(-speed, player.Velocity.Y);
-        }
+            playerRb.Velocity = new Vector2(-MoveSpeed, playerRb.Velocity.Y);
         else if (keyboard.IsKeyDown(Keys.D))
-        {
-            player.Velocity = new Vector2(speed, player.Velocity.Y);
-        }
+            playerRb.Velocity = new Vector2(MoveSpeed, playerRb.Velocity.Y);
         else
-        {
-            player.Velocity = new Vector2(0, player.Velocity.Y);
-        }
+            playerRb.Velocity = new Vector2(0, playerRb.Velocity.Y);
 
-        // Jump
-        if (keyboard.IsKeyDown(Keys.Space) && player.IsGrounded)
-        {
-            player.AddImpulse(new Vector2(0, -400));
-        }
+        if (keyboard.IsKeyDown(Keys.Space) && playerRb.IsGrounded)
+            playerRb.AddImpulse(new Vector2(0, JumpImpulse));
 
-        // Stop downward velocity if grounded
-        if (player.IsGrounded && player.Velocity.Y > 0)
-        {
-            player.Velocity = new Vector2(player.Velocity.X, 0);
-        }
-
-        // Update physics
-        player.Update(gameTime);
-        collisionManager.ResolveCol(player, worldColliders);
+        _player.Update(gameTime);
+        _collisionManager.ResolveCol(_player, _worldColliders);
 
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
+        // 1. Draw the game scene into the fixed-size render target.
+        GraphicsDevice.SetRenderTarget(_renderTarget);
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         _spriteBatch.Begin();
 
-        // Draw platforms
-        foreach (var platform in platforms)
-        {
-            DrawBody(platform, Color.Green);
-        }
+        foreach (var platform in _platforms)
+            _spriteBatch.Draw(_pixel, platform.Bounds, Color.Green);
 
-        // Draw player sprite
-        playerSprite.Draw(_spriteBatch, player.Position);
+        _spriteBatch.Draw(_pixel, _player.Bounds, Color.Red);
 
         _spriteBatch.End();
 
-        base.Draw(gameTime);
-    }
+        // 2. Draw the render target to the actual screen, scaled to fit with 4:3 preserved.
+        GraphicsDevice.SetRenderTarget(null);
+        GraphicsDevice.Clear(Color.Black); // letterbox/pillarbox bar color
 
-    private void DrawBody(Rigidbody body, Color color)
-    {
-        _spriteBatch.Draw(pixel, body.Bounds, color);
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        _spriteBatch.Draw(_renderTarget, _destinationRectangle, Color.White);
+        _spriteBatch.End();
+
+        base.Draw(gameTime);
     }
 }
