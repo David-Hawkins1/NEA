@@ -56,47 +56,174 @@ public class CollisionManager
         }
     }
     public SweepResult Sweep(PhysicsObject obj, Rectangle target, Vector2 movement)
+{
+    Rectangle bounds = obj.Bounds;
+
+    if (bounds.Intersects(target))
     {
-        Rectangle bounds = obj.Bounds;
-        if (movement == Vector2.Zero) // If not moving collision is not happening
+        float left = target.Right - bounds.Left;
+        float right = bounds.Right - target.Left;
+        float top = target.Bottom - bounds.Top;
+        float bottom = bounds.Bottom - target.Top;
+
+        float horizontalPenetration =
+            MathF.Min(left, right);
+
+        float verticalPenetration =
+            MathF.Min(top, bottom);
+
+        Vector2 collisionNormal;
+
+        if (verticalPenetration < horizontalPenetration)
         {
-            return new SweepResult
-            {
-                Hit = false,
-                Time = 1f,
-                Normal = Vector2.Zero
-            };
+            collisionNormal = movement.Y >= 0
+                ? new Vector2(0, -1)
+                : new Vector2(0, 1);
+        }
+        else
+        {
+            collisionNormal = movement.X >= 0
+                ? new Vector2(-1, 0)
+                : new Vector2(1, 0);
         }
 
-        float xEntry; float xExit; float yEntry; float yExit;
-        // Finding distances between the box entering target collider and exiting
-        if (movement.X > 0) { xEntry = target.Left - bounds.Right; xExit = target.Right - bounds.Left;}
-        else { xEntry = target.Right - bounds.Left; xExit = target.Left - bounds.Right;}
-
-        if (movement.Y > 0) { yEntry = target.Top - bounds.Bottom; yExit = target.Bottom - bounds.Top;}
-        else  { yEntry = target.Bottom - bounds.Top; yExit = target.Top - bounds.Bottom;}
-
-        // Distances => Times
-        float xEntryTime; float xExitTime; float yEntryTime; float yExitTime;
-
-        if (movement.X == 0) { xEntryTime = float.NegativeInfinity; xExitTime = float.PositiveInfinity;}
-        else { xEntryTime = xEntry / movement.X; xExitTime = xExit / movement.X;}
-
-        if (movement.Y == 0) { yEntryTime = float.NegativeInfinity; yExitTime = float.PositiveInfinity;}
-        else { yEntryTime = yEntry / movement.Y; yExitTime = yExit / movement.Y;}
-
-        float entryTime = MathF.Max(xEntryTime, yEntryTime);
-        float exitTime = MathF.Min(xExitTime, yExitTime);
-
-        if (entryTime > exitTime || entryTime < 0f || entryTime > 1f)
+        return new SweepResult
         {
-            return new SweepResult { Hit = false, Time = 1f, Normal = Vector2.Zero};
-        }
-
-        Vector2 normal;
-        if (xEntryTime > yEntryTime) { normal = movement.X > 0 ? new Vector2(-1,0) : new Vector2(1,0); }
-        else { normal = movement.Y > 0 ? new Vector2(0, -1) : new Vector2(0,1); }
-
-        return new SweepResult { Hit = true, Time = entryTime, Normal = normal };
+            Hit = true,
+            Time = 0f,
+            Normal = collisionNormal
+        };
     }
+
+    if (movement == Vector2.Zero)
+    {
+        return new SweepResult
+        {
+            Hit = false,
+            Time = 1f,
+            Normal = Vector2.Zero
+        };
+    }
+
+    if (movement.X == 0 &&
+        (bounds.Right <= target.Left ||
+         bounds.Left >= target.Right))
+    {
+        return new SweepResult
+        {
+            Hit = false,
+            Time = 1f,
+            Normal = Vector2.Zero
+        };
+    }
+
+    if (movement.Y == 0 &&
+        (bounds.Bottom <= target.Top ||
+         bounds.Top >= target.Bottom))
+    {
+        return new SweepResult
+        {
+            Hit = false,
+            Time = 1f,
+            Normal = Vector2.Zero
+        };
+    }
+
+    float xEntry;
+    float xExit;
+    float yEntry;
+    float yExit;
+
+    if (movement.X > 0)
+    {
+        xEntry = target.Left - bounds.Right;
+        xExit = target.Right - bounds.Left;
+    }
+    else if (movement.X < 0)
+    {
+        xEntry = target.Right - bounds.Left;
+        xExit = target.Left - bounds.Right;
+    }
+    else
+    {
+        xEntry = float.NegativeInfinity;
+        xExit = float.PositiveInfinity;
+    }
+
+    if (movement.Y > 0)
+    {
+        yEntry = target.Top - bounds.Bottom;
+        yExit = target.Bottom - bounds.Top;
+    }
+    else if (movement.Y < 0)
+    {
+        yEntry = target.Bottom - bounds.Top;
+        yExit = target.Top - bounds.Bottom;
+    }
+    else
+    {
+        yEntry = float.NegativeInfinity;
+        yExit = float.PositiveInfinity;
+    }
+
+    float xEntryTime =
+        movement.X == 0
+            ? float.NegativeInfinity
+            : xEntry / movement.X;
+
+    float xExitTime =
+        movement.X == 0
+            ? float.PositiveInfinity
+            : xExit / movement.X;
+
+    float yEntryTime =
+        movement.Y == 0
+            ? float.NegativeInfinity
+            : yEntry / movement.Y;
+
+    float yExitTime =
+        movement.Y == 0
+            ? float.PositiveInfinity
+            : yExit / movement.Y;
+
+    float entryTime =
+        MathF.Max(xEntryTime, yEntryTime);
+
+    float exitTime =
+        MathF.Min(xExitTime, yExitTime);
+
+    if (entryTime > exitTime ||
+        entryTime < 0f ||
+        entryTime > 1f)
+    {
+        return new SweepResult
+        {
+            Hit = false,
+            Time = 1f,
+            Normal = Vector2.Zero
+        };
+    }
+
+    Vector2 normal;
+
+    if (xEntryTime > yEntryTime)
+    {
+        normal = movement.X > 0
+            ? new Vector2(-1, 0)
+            : new Vector2(1, 0);
+    }
+    else
+    {
+        normal = movement.Y > 0
+            ? new Vector2(0, -1)
+            : new Vector2(0, 1);
+    }
+
+    return new SweepResult
+    {
+        Hit = true,
+        Time = entryTime,
+        Normal = normal
+    };
+}
 }

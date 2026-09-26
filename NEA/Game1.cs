@@ -18,7 +18,7 @@ public class Game1 : Game
     private List<PhysicsObject> _platforms;
     private List<Rectangle> _worldColliders;
 
-    private const float MoveSpeed = 200f;
+    private const float MoveForce = 2500f;
     private const float JumpImpulse = -900f;
 
     private const int VirtualWidth = 1600;
@@ -40,7 +40,6 @@ public class Game1 : Game
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
     }
-
     protected override void Initialize()
     {
         _physicsWorld = new PhysicsWorld();
@@ -80,6 +79,7 @@ public class Game1 : Game
 
         _platforms.Add(platform);
         _worldColliders.Add(platform.Bounds);
+        _physicsWorld.AddCollider(platform.Bounds);
     }
 
     protected override void LoadContent()
@@ -168,18 +168,14 @@ public class Game1 : Game
 
         if (keyboard.IsKeyDown(Keys.A))
         {
-            playerRb.Velocity =
-                new Vector2(
-                    -MoveSpeed,
-                    playerRb.Velocity.Y
-                );
+            playerRb.AddForce(
+                new Vector2(-MoveForce, 0)
+            );
         }
         else if (keyboard.IsKeyDown(Keys.D))
         {
-            playerRb.Velocity =
-                new Vector2(
-                    MoveSpeed,
-                    playerRb.Velocity.Y
+            playerRb.AddForce(
+                new Vector2(MoveForce, 0)
                 );
         }
         else
