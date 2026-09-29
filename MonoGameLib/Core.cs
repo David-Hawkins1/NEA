@@ -189,9 +189,6 @@ public class Core : Game
             s_activeScene.Dispose();
         }
 
-        // Force the garbage collector to collect to ensure memory is cleared.
-        GC.Collect();
-
         // Change the currently active scene to the new scene.
         s_activeScene = s_nextScene;
 

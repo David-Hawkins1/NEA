@@ -33,7 +33,7 @@ public class Rigidbody
     public float Drag { get; set; } = 0f;
     public float Friction { get; set; } = 0f;
     // Gravity Constant
-    public float Gravity { get; set; } = 1200f;
+    public float Gravity { get; set; } = 2250f;
     // Temporary force application value
     private Vector2 _appliedForce = Vector2.Zero;
     public float MaxGroundSpeed { get; set; } = 600f;
@@ -79,12 +79,11 @@ public class Rigidbody
                 Math.Max(0f, 1f - Drag * deltaTime);
             Velocity =new Vector2(Velocity.X * dragFactor, Velocity.Y);
         }
-        
+        float maxHorizSpeed = IsGrounded ? MaxGroundSpeed : MaxAirSpeed;
         Velocity = new Vector2(
-            MathHelper.Clamp(Velocity.X, -MaxGroundSpeed, MaxGroundSpeed),
+            MathHelper.Clamp(Velocity.X, -maxHorizSpeed, maxHorizSpeed),
             MathHelper.Clamp(Velocity.Y, -MaxFallSpeed, MaxFallSpeed)
             );
-        Position += Velocity * deltaTime; //Semi-Implicit Euler Integration
         Acceleration = Vector2.Zero;
         _appliedForce = Vector2.Zero;
     }

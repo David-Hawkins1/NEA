@@ -2,7 +2,8 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Physics;
-using MonoGameLibrary.Graphics;
+using MonoGameLibrary.StateMachine;
+using System;
 using System.Collections.Generic;
 
 namespace NEA;
@@ -11,168 +12,241 @@ public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
+    private Texture2D _pixel;
 
-    private Texture2D pixel;
-    private Texture2D spriteTexture;
-    private Sprite playerSprite;
+    private PhysicsWorld _physicsWorld;
+    private PhysicsObject _player;
+    private List<PhysicsObject> _platforms;
+    private List<Rectangle> _worldColliders;
 
-    private Rigidbody player;
-    private Rigidbody ground;
-    private List<Rigidbody> platforms;
-    private List<Rectangle> worldColliders;
+    private const float MoveForce = 2500f;
+    private const float JumpImpulse = -900f;
 
-    private CollisionManager collisionManager;
+    private const int VirtualWidth = 1600;
+    private const int VirtualHeight = 1200;
+
+    private RenderTarget2D _renderTarget;
+    private Rectangle _destinationRectangle;
 
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
+
+        _graphics.PreferredBackBufferWidth = VirtualWidth;
+        _graphics.PreferredBackBufferHeight = VirtualHeight;
+
+        Window.AllowUserResizing = true;
+        Window.ClientSizeChanged += OnResize;
+
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
     }
-
     protected override void Initialize()
     {
-        collisionManager = new CollisionManager();
-        platforms = new List<Rigidbody>();
-        worldColliders = new List<Rectangle>();
+        _physicsWorld = new PhysicsWorld();
 
-        // Dynamic player
-        player = new Rigidbody(
+        _platforms = new List<PhysicsObject>();
+        _worldColliders = new List<Rectangle>();
+
+        _player = new PhysicsObject(
             new Vector2(100, 100),
             32,
             32
         );
 
-        // Static ground
-        ground = new Rigidbody(
-            new Vector2(400, 750),
-            800,
-            50
-        );
-        ground.IsKinematic = true;
-        platforms.Add(ground);
-        worldColliders.Add(ground.Bounds);
+        _physicsWorld.Add(_player);
 
-        // Platform 1
-        Rigidbody platform1 = new Rigidbody(
-            new Vector2(200, 600),
-            200,
-            20
-        );
-        platform1.IsKinematic = true;
-        platforms.Add(platform1);
-        worldColliders.Add(platform1.Bounds);
-
-        // Platform 2
-        Rigidbody platform2 = new Rigidbody(
-            new Vector2(600, 500),
-            200,
-            20
-        );
-        platform2.IsKinematic = true;
-        platforms.Add(platform2);
-        worldColliders.Add(platform2.Bounds);
-
-        // Platform 3
-        Rigidbody platform3 = new Rigidbody(
-            new Vector2(150, 400),
-            150,
-            20
-        );
-        platform3.IsKinematic = true;
-        platforms.Add(platform3);
-        worldColliders.Add(platform3.Bounds);
-
-        // Platform 4
-        Rigidbody platform4 = new Rigidbody(
-            new Vector2(650, 300),
-            150,
-            20
-        );
-        platform4.IsKinematic = true;
-        platforms.Add(platform4);
-        worldColliders.Add(platform4.Bounds);
+        AddPlatform(new Vector2(800, 1100), 1400, 50);
+        AddPlatform(new Vector2(400, 950), 300, 30);
+        AddPlatform(new Vector2(800, 800), 300, 30);
+        AddPlatform(new Vector2(1200, 650), 300, 30);
 
         base.Initialize();
+    }
+
+    private void AddPlatform(
+        Vector2 position,
+        float width,
+        float height)
+    {
+        PhysicsObject platform =
+            new PhysicsObject(position, width, height)
+            {
+                Rigidbody =
+                {
+                    IsKinematic = true
+                }
+            };
+
+        _platforms.Add(platform);
+        _worldColliders.Add(platform.Bounds);
+        _physicsWorld.AddCollider(platform.Bounds);
     }
 
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        pixel = new Texture2D(GraphicsDevice, 1, 1);
-        pixel.SetData(new[] { Color.White });
+        _pixel = new Texture2D(
+            GraphicsDevice,
+            1,
+            1
+        );
 
-        spriteTexture = Content.Load<Texture2D>("images/sprite");
-        TextureRegion region = new TextureRegion(spriteTexture, 0, 0, (int)player.Width, (int)player.Height);
-        playerSprite = new Sprite(region);
-        playerSprite.CenterOrigin();
+        _pixel.SetData(new[] { Color.White });
+
+        _renderTarget = new RenderTarget2D(
+            GraphicsDevice,
+            VirtualWidth,
+            VirtualHeight
+        );
+
+        RecalculateDestinationRectangle();
+    }
+
+    private void OnResize(
+        object sender,
+        EventArgs e)
+    {
+        RecalculateDestinationRectangle();
+    }
+
+    private void RecalculateDestinationRectangle()
+    {
+        int windowWidth =
+            GraphicsDevice.PresentationParameters.BackBufferWidth;
+
+        int windowHeight =
+            GraphicsDevice.PresentationParameters.BackBufferHeight;
+
+        float targetAspect =
+            VirtualWidth / (float)VirtualHeight;
+
+        float windowAspect =
+            windowWidth / (float)windowHeight;
+
+        int destWidth;
+        int destHeight;
+
+        if (windowAspect > targetAspect)
+        {
+            destHeight = windowHeight;
+            destWidth =
+                (int)(windowHeight * targetAspect);
+        }
+        else
+        {
+            destWidth = windowWidth;
+            destHeight =
+                (int)(windowWidth / targetAspect);
+        }
+
+        int x =
+            (windowWidth - destWidth) / 2;
+
+        int y =
+            (windowHeight - destHeight) / 2;
+
+        _destinationRectangle =
+            new Rectangle(
+                x,
+                y,
+                destWidth,
+                destHeight
+            );
     }
 
     protected override void Update(GameTime gameTime)
     {
-        KeyboardState keyboard = Keyboard.GetState();
+        KeyboardState keyboard =
+            Keyboard.GetState();
 
         if (keyboard.IsKeyDown(Keys.Escape))
             Exit();
 
-        float speed = 200f;
+        Rigidbody playerRb =
+            _player.Rigidbody;
 
-        // Horizontal movement
         if (keyboard.IsKeyDown(Keys.A))
         {
-            player.Velocity = new Vector2(-speed, player.Velocity.Y);
+            playerRb.AddForce(
+                new Vector2(-MoveForce, 0)
+            );
         }
         else if (keyboard.IsKeyDown(Keys.D))
         {
-            player.Velocity = new Vector2(speed, player.Velocity.Y);
+            playerRb.AddForce(
+                new Vector2(MoveForce, 0)
+                );
         }
         else
         {
-            player.Velocity = new Vector2(0, player.Velocity.Y);
+            playerRb.Velocity =
+                new Vector2(
+                    0,
+                    playerRb.Velocity.Y
+                );
         }
 
-        // Jump
-        if (keyboard.IsKeyDown(Keys.Space) && player.IsGrounded)
+        if (keyboard.IsKeyDown(Keys.Space) &&
+            playerRb.IsGrounded)
         {
-            player.AddImpulse(new Vector2(0, -400));
+            playerRb.AddImpulse(
+                new Vector2(0, JumpImpulse)
+            );
         }
-
-        // Stop downward velocity if grounded
-        if (player.IsGrounded && player.Velocity.Y > 0)
-        {
-            player.Velocity = new Vector2(player.Velocity.X, 0);
-        }
-
-        // Update physics
-        player.Update(gameTime);
-        collisionManager.ResolveCol(player, worldColliders);
+        
+        _physicsWorld.Step(gameTime);
+       
 
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
+        GraphicsDevice.SetRenderTarget(
+            _renderTarget
+        );
+
+        GraphicsDevice.Clear(
+            Color.CornflowerBlue
+        );
 
         _spriteBatch.Begin();
 
-        // Draw platforms
-        foreach (var platform in platforms)
+        foreach (var platform in _platforms)
         {
-            DrawBody(platform, Color.Green);
+            _spriteBatch.Draw(
+                _pixel,
+                platform.Bounds,
+                Color.Green
+            );
         }
 
-        // Draw player sprite
-        playerSprite.Draw(_spriteBatch, player.Position);
+        _spriteBatch.Draw(
+            _pixel,
+            _player.Bounds,
+            Color.Red
+        );
+
+        _spriteBatch.End();
+
+        GraphicsDevice.SetRenderTarget(null);
+
+        GraphicsDevice.Clear(Color.Black);
+
+        _spriteBatch.Begin(
+            samplerState: SamplerState.PointClamp
+        );
+
+        _spriteBatch.Draw(
+            _renderTarget,
+            _destinationRectangle,
+            Color.White
+        );
 
         _spriteBatch.End();
 
         base.Draw(gameTime);
-    }
-
-    private void DrawBody(Rigidbody body, Color color)
-    {
-        _spriteBatch.Draw(pixel, body.Bounds, color);
     }
 }
