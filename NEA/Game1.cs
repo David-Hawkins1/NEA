@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Physics;
+using MonoGameLibrary.StateMachine;
 using System;
 using System.Collections.Generic;
 
@@ -194,8 +195,9 @@ public class Game1 : Game
                 new Vector2(0, JumpImpulse)
             );
         }
-
+        
         _physicsWorld.Step(gameTime);
+       
 
         base.Update(gameTime);
     }
