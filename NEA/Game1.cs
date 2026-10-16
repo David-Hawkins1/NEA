@@ -1,8 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGameLibrary.Input;
 using MonoGameLibrary.Physics;
 using MonoGameLibrary.StateMachine;
+using NEA.Controllers;
 using System;
 using System.Collections.Generic;
 
@@ -27,6 +29,8 @@ public class Game1 : Game
 
     private RenderTarget2D _renderTarget;
     private Rectangle _destinationRectangle;
+    private PlayerController _playerController;
+    private InputManager _input = new InputManager();
 
     public Game1()
     {
@@ -53,7 +57,7 @@ public class Game1 : Game
             32,
             32
         );
-
+        _playerController = new PlayerController(_player, _input);
         _physicsWorld.Add(_player);
 
         AddPlatform(new Vector2(800, 1100), 1400, 50);
@@ -158,44 +162,7 @@ public class Game1 : Game
 
     protected override void Update(GameTime gameTime)
     {
-        KeyboardState keyboard =
-            Keyboard.GetState();
-
-        if (keyboard.IsKeyDown(Keys.Escape))
-            Exit();
-
-        Rigidbody playerRb =
-            _player.Rigidbody;
-
-        if (keyboard.IsKeyDown(Keys.A))
-        {
-            playerRb.AddForce(
-                new Vector2(-MoveForce, 0)
-            );
-        }
-        else if (keyboard.IsKeyDown(Keys.D))
-        {
-            playerRb.AddForce(
-                new Vector2(MoveForce, 0)
-                );
-        }
-        else
-        {
-            playerRb.Velocity =
-                new Vector2(
-                    0,
-                    playerRb.Velocity.Y
-                );
-        }
-
-        if (keyboard.IsKeyDown(Keys.Space) &&
-            playerRb.IsGrounded)
-        {
-            playerRb.AddImpulse(
-                new Vector2(0, JumpImpulse)
-            );
-        }
-        
+        _playerController.Update(gameTime);
         _physicsWorld.Step(gameTime);
        
 
