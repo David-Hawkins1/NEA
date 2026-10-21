@@ -1,20 +1,19 @@
 ﻿
+
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Input;
 using MonoGameLibrary.Physics;
 using MonoGameLibrary;
-using RenderingLibrary.Math;
 
 namespace NEA.Controllers;
 
 public class PlayerController
 {
-    // Managers and the player object
     private readonly PhysicsObject _player;
     private readonly InputManager _input;
 
-    // Movement constants
+    // Movement
     private const float GroundAcceleration = 1800f;
     private const float AirAcceleration = 900f;
     private const float TurnAcceleration = 6000f;
@@ -22,39 +21,85 @@ public class PlayerController
     private const float AirDeceleration = 750f;
     private const float JumpForce = 950f;
 
-    // Time consts
-
+    // Jump timing
     private const float CoyoteTime = 0.1f;
     private const float JumpBufferTime = 0.1f;
-    // Timers
-    private readonly Timer _coyoteTimer;
-    private readonly Timer _jumpBufferTimer;
+
+    private float _coyoteRemaining = 0f;
+    private float _jumpBufferRemaining = 0f;
 
     private bool _wasGrounded;
+    private bool _jumpAvailable = true;
 
-    public PlayerController(PhysicsObject player, InputManager input) // Constructor
+    public PlayerController(PhysicsObject player, InputManager input)
     {
         _player = player;
         _input = input;
-
-        _coyoteTimer = new Timer(CoyoteTime);
-        _jumpBufferTimer = new Timer(JumpBufferTime);
-
     }
 
-    public void Update(GameTime gameTime) //Update method
+    public void Update(GameTime gameTime)
     {
         float deltaTime =
             (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        _coyoteTimer.Update(gameTime);
-        _jumpBufferTimer.Update(gameTime);
+        // Count both timers down exactly once per frame.
+        _coyoteRemaining = MathHelper.Max(
+            0f, _coyoteRemaining - deltaTime);
 
-        HandleJump(gameTime);
+        _jumpBufferRemaining = MathHelper.Max(
+            0f, _jumpBufferRemaining - deltaTime);
+
+        HandleJump();
+
         HandleMovement(deltaTime);
     }
 
-    private void HandleMovement(float deltaTime) // Handles a d movement
+    private void HandleJump()
+    {
+        var keyboard = _input.Keyboard;
+        Rigidbody rb = _player.Rigidbody;
+
+        bool isGrounded = rb.IsGrounded;
+
+        // Start the buffer only when Space is newly pressed.
+        if (keyboard.WasKeyJustPressed(Keys.Space))
+        {
+            _jumpBufferRemaining = JumpBufferTime;
+        }
+
+        // Detect landing: restore the jump only on the
+        // transition from airborne to grounded.
+        if (isGrounded && !_wasGrounded)
+        {
+            _jumpAvailable = true;
+        }
+
+        // Start coyote time when leaving the ground,
+        // provided the player hasn't already jumped.
+        if (!isGrounded && _wasGrounded && _jumpAvailable)
+        {
+            _coyoteRemaining = CoyoteTime;
+        }
+
+        // Jump only while the buffer is active and
+        // a ground jump or coyote jump is available.
+        if (_jumpBufferRemaining > 0f &&
+            _jumpAvailable &&
+            (isGrounded || _coyoteRemaining > 0f))
+        {
+            rb.Velocity = new Vector2(
+                rb.Velocity.X,
+                -JumpForce);
+
+            _jumpAvailable = false;
+            _jumpBufferRemaining = 0f;
+            _coyoteRemaining = 0f;
+        }
+
+        _wasGrounded = isGrounded;
+    }
+
+    private void HandleMovement(float deltaTime)
     {
         var keyboard = _input.Keyboard;
         Rigidbody rb = _player.Rigidbody;
@@ -90,45 +135,6 @@ public class PlayerController
             MoveTowardsZero(deceleration, deltaTime);
         }
     }
-    private void HandleJump(GameTime gameTime)
-    {
-        var keyboard = _input.Keyboard;
-        Rigidbody rb = _player.Rigidbody;
-
-        bool isGrounded = rb.IsGrounded;
-
-        // Start coyote time when leaving the ground.
-        if (_wasGrounded && !isGrounded)
-        {
-            _coyoteTimer.Start();
-        }
-
-        // Refresh coyote time while grounded.
-        if (isGrounded)
-        {
-            _coyoteTimer.Start();
-        }
-
-        // Remember a jump press briefly.
-        if (keyboard.WasKeyJustPressed(Keys.Space))
-        {
-            _jumpBufferTimer.Start();
-        }
-
-        // Jump if grounded (or within coyote time) and buffered.
-        if (_jumpBufferTimer.IsRunning &&
-            (isGrounded || _coyoteTimer.IsRunning))
-        {
-            rb.Velocity = new Vector2(
-                rb.Velocity.X,
-                -JumpForce);
-
-            _jumpBufferTimer.Stop();
-            _coyoteTimer.Stop();
-        }
-
-        _wasGrounded = isGrounded;
-    }
 
     private void Move(
         float direction,
@@ -138,6 +144,7 @@ public class PlayerController
         Rigidbody rb = _player.Rigidbody;
 
         float targetSpeed = direction * rb.MaxGroundSpeed;
+
         float change = MathHelper.Clamp(
             targetSpeed - rb.Velocity.X,
             -acceleration * deltaTime,
@@ -164,3 +171,4 @@ public class PlayerController
             rb.Velocity.Y);
     }
 }
+
