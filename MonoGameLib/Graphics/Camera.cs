@@ -14,6 +14,8 @@ public class Camera
     private float _shakeDuration = 0.0f;
     private float _shakeMagnitude = 0.0f;
 
+    private Random _random = new Random();
+
     public Camera(int width, int height)
     {
         Bounds = new Rectangle(0, 0, width, height);
@@ -56,7 +58,6 @@ public class Camera
 
     public void UpdateShake(GameTime gameTime)
     {
-        Random _random = new Random();
         if (_shakeDuration <=0)
         {
             _shakeOffset = Vector2.Zero;
