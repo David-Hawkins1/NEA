@@ -17,13 +17,13 @@ public class PlayerController
     private const float GroundAcceleration = 1800f;
     private const float AirAcceleration = 900f;
     private const float TurnAcceleration = 6000f;
-    private const float GroundDeceleration = 1500f;
-    private const float AirDeceleration = 750f;
+    private const float GroundDeceleration = 2000f;
+    private const float AirDeceleration = 500f;
     private const float JumpForce = 950f;
 
     // Jump timing
-    private const float CoyoteTime = 0.1f;
-    private const float JumpBufferTime = 0.1f;
+    private const float CoyoteTime = 0.05f;
+    private const float JumpBufferTime = 0.05f;
 
     private float _coyoteRemaining = 0f;
     private float _jumpBufferRemaining = 0f;

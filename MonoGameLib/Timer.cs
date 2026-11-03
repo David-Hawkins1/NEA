@@ -35,7 +35,7 @@ namespace MonoGameLibrary
                 return;
             }
 
-            RemainingTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            RemainingTime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (RemainingTime < 0f)
             {
                     RemainingTime = 0f;
