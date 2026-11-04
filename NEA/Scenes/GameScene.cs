@@ -34,6 +34,7 @@ public class GameScene : Scene
         AddPlatform(new Vector2(400, 950), 300, 30);
         AddPlatform(new Vector2(800, 800), 300, 30);
         AddPlatform(new Vector2(1200, 650), 300, 30);
+        AddPlatform(new Vector2(0, 200), 100, 2000);
     }
 
     private void AddPlatform(

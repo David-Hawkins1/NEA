@@ -22,8 +22,8 @@ public class PlayerController
     private const float JumpForce = 950f;
 
     // Jump timing
-    private const float CoyoteTime = 0.05f;
-    private const float JumpBufferTime = 0.05f;
+    private const float CoyoteTime = 0.075f;
+    private const float JumpBufferTime = 0.08f;
 
     private float _coyoteRemaining = 0f;
     private float _jumpBufferRemaining = 0f;

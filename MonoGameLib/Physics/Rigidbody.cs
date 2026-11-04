@@ -71,7 +71,9 @@ public class Rigidbody
         {
             float frictionFactor =
                 Math.Max(0f, 1f - Friction * deltaTime);
-            Velocity *= frictionFactor;
+            Velocity = new Vector2(
+                Velocity.X * frictionFactor,
+                Velocity.Y);
         }
         else
         {
