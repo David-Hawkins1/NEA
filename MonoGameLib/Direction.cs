@@ -3,7 +3,7 @@ using System;
 
 namespace MonoGameLib
 {
-    public enum Direction
+    public enum Direction // 8 Cardinal Directions
     {
         North,
         NorthEast,
@@ -16,7 +16,7 @@ namespace MonoGameLib
     }
     public static class DirectionHelper
     {
-        public static Vector2 GetVector(Direction direction)
+        public static Vector2 GetVector(Direction direction) // Turns a direction into a unit vector 
         {
             return direction switch
             {
@@ -31,14 +31,13 @@ namespace MonoGameLib
                 _ => Vector2.Zero
             };
         }
-        public static Direction GetDirection(Vector2 vector)
+        public static Direction GetDirection(Vector2 vector) // Clamps a vector to the nearest cardinal direction
         {
             if (vector == Vector2.Zero)
                 throw new ArgumentException("Direction vector cannot be zero.");
 
             float angle = MathF.Atan2(vector.Y, vector.X);
 
-            // Convert radians to degrees
             float degrees = MathHelper.ToDegrees(angle);
 
             // Round to the nearest 45 degrees
@@ -60,7 +59,7 @@ namespace MonoGameLib
                 _ => Direction.East
             };
         }
-        public static Direction GetOpposite(Direction direction)
+        public static Direction GetOpposite(Direction direction) // Gets the opposite direction of a given direction
         {
             return direction switch
             {
