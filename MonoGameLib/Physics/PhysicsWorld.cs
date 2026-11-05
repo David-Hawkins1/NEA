@@ -48,10 +48,11 @@ public class PhysicsWorld
             if (rb.IsKinematic)
                 continue;
 
-            rb.IsGrounded = false;
+            bool wasGrounded = rb.IsGrounded;
             rb.IsTouchingWall = false;
 
             obj.Update(gameTime);
+            rb.IsGrounded = false;
 
             Vector2 remainingMovement =
                 rb.Velocity * deltaTime;

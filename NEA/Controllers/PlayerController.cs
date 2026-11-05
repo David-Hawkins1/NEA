@@ -1,10 +1,11 @@
-﻿
-
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Input;
 using MonoGameLibrary.Physics;
 using MonoGameLibrary;
+using System.ComponentModel.Design.Serialization;
+using MonoGameLib;
+using Gum.DataTypes.Variables;
 
 namespace NEA.Controllers;
 
@@ -22,14 +23,21 @@ public class PlayerController
     private const float JumpForce = 950f;
 
     // Jump timing
-    private const float CoyoteTime = 0.05f;
-    private const float JumpBufferTime = 0.05f;
+    private const float CoyoteTime = 0.075f;
+    private const float JumpBufferTime = 0.08f;
 
     private float _coyoteRemaining = 0f;
     private float _jumpBufferRemaining = 0f;
 
     private bool _wasGrounded;
     private bool _jumpAvailable = true;
+
+    // Dash variables
+    private const float DashDuration = 0.25f;
+    private const float DashImpulse = 750f;
+    private float _dashRemaining = 0f;
+    private bool _isDashing = false;
+    private Direction _LastDir = Direction.East;
 
     public PlayerController(PhysicsObject player, InputManager input)
     {
@@ -49,9 +57,16 @@ public class PlayerController
         _jumpBufferRemaining = MathHelper.Max(
             0f, _jumpBufferRemaining - deltaTime);
 
-        HandleJump();
+        UpdateLastDirection();
 
+        HandleDash(deltaTime);
+        if (_isDashing)
+        {
+            return;
+        }
+        HandleJump();
         HandleMovement(deltaTime);
+        
     }
 
     private void HandleJump()
@@ -135,6 +150,40 @@ public class PlayerController
             MoveTowardsZero(deceleration, deltaTime);
         }
     }
+    private void HandleDash(float deltaTime)
+    {
+        var keyboard = _input.Keyboard;
+         if (keyboard.WasKeyJustPressed(Keys.LeftShift) && !_isDashing)
+         {
+            StartDash();
+         }
+        else if (!_isDashing)
+        {
+            return;
+        }
+        _dashRemaining -= deltaTime;
+
+        if (_dashRemaining <= 0f)
+        {
+            EndDash();
+        }
+    }
+    private void StartDash()
+    {
+        _isDashing = true;
+        _dashRemaining = DashDuration;
+        Vector2 dashDirection = DirectionHelper.GetVector(_LastDir);
+
+        _player.Rigidbody.IgnoreSpeedLimits = true;
+        _player.Rigidbody.UseGravity = false;
+        _player.Rigidbody.AddImpulse(dashDirection * DashImpulse);
+    }
+    private void EndDash()
+    {
+        _isDashing = false;
+        _player.Rigidbody.IgnoreSpeedLimits = false;
+        _player.Rigidbody.UseGravity = true;
+    }
 
     private void Move(
         float direction,
@@ -169,6 +218,32 @@ public class PlayerController
         rb.Velocity = new Vector2(
             rb.Velocity.X + change,
             rb.Velocity.Y);
+    }
+    private void UpdateLastDirection()
+    {
+        var keyboard = _input.Keyboard;
+
+        int x = 0;
+        int y = 0;
+
+        if (keyboard.IsKeyDown(Keys.A))
+            x--;
+
+        if (keyboard.IsKeyDown(Keys.D))
+            x++;
+
+        if (keyboard.IsKeyDown(Keys.W))
+            y--;
+
+        if (keyboard.IsKeyDown(Keys.S))
+            y++;
+
+        if (x == 0 && y == 0)
+            return;
+
+        Vector2 direction = new Vector2(x, y);
+
+        _LastDir = DirectionHelper.GetDirection(direction);
     }
 }
 

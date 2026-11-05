@@ -18,6 +18,8 @@ public class AnimatedSprite : Sprite
         set
         {
             _animation = value;
+            _currentFrame = 0;
+            _elapsed = TimeSpan.Zero;
             Region = _animation.Frames[0];
         }
     }
@@ -42,7 +44,7 @@ public class AnimatedSprite : Sprite
     {
         _elapsed += gameTime.ElapsedGameTime;
 
-        if (_elapsed >= _animation.Delay)
+        while (_elapsed >= _animation.Delay)
         {
             _elapsed -= _animation.Delay;
             _currentFrame++;

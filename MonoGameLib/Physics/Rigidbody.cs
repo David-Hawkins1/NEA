@@ -43,6 +43,7 @@ public class Rigidbody
     // Platformer properties
     public bool IsGrounded { get; set; }
     public bool IsTouchingWall { get; set; }
+    public bool IgnoreSpeedLimits { get; set; } = false;
 
     // Constructors
     public Rigidbody(Vector2 position)
@@ -71,7 +72,9 @@ public class Rigidbody
         {
             float frictionFactor =
                 Math.Max(0f, 1f - Friction * deltaTime);
-            Velocity *= frictionFactor;
+            Velocity = new Vector2(
+                Velocity.X * frictionFactor,
+                Velocity.Y);
         }
         else
         {
@@ -79,11 +82,14 @@ public class Rigidbody
                 Math.Max(0f, 1f - Drag * deltaTime);
             Velocity =new Vector2(Velocity.X * dragFactor, Velocity.Y);
         }
-        float maxHorizSpeed = IsGrounded ? MaxGroundSpeed : MaxAirSpeed;
-        Velocity = new Vector2(
-            MathHelper.Clamp(Velocity.X, -maxHorizSpeed, maxHorizSpeed),
-            MathHelper.Clamp(Velocity.Y, -MaxFallSpeed, MaxFallSpeed)
-            );
+        if (!IgnoreSpeedLimits)
+        {
+            float maxHorizSpeed = IsGrounded ? MaxGroundSpeed : MaxAirSpeed;
+            Velocity = new Vector2(
+                MathHelper.Clamp(Velocity.X, -maxHorizSpeed, maxHorizSpeed),
+                MathHelper.Clamp(Velocity.Y, -MaxFallSpeed, MaxFallSpeed)
+                );
+        }
         Acceleration = Vector2.Zero;
         _appliedForce = Vector2.Zero;
     }
