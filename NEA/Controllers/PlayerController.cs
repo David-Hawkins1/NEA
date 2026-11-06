@@ -33,8 +33,8 @@ public class PlayerController
     private bool _jumpAvailable = true;
 
     // Dash variables
-    private const float DashDuration = 0.25f;
-    private const float DashImpulse = 750f;
+    private const float DashDuration = 0.15f;
+    private const float DashSpeed = 1200f;
     private float _dashRemaining = 0f;
     private bool _isDashing = false;
     private Direction _LastDir = Direction.East;
@@ -60,11 +60,12 @@ public class PlayerController
         UpdateLastDirection();
 
         HandleDash(deltaTime);
+        HandleJump();
         if (_isDashing)
         {
             return;
         }
-        HandleJump();
+        
         HandleMovement(deltaTime);
         
     }
@@ -176,7 +177,7 @@ public class PlayerController
 
         _player.Rigidbody.IgnoreSpeedLimits = true;
         _player.Rigidbody.UseGravity = false;
-        _player.Rigidbody.AddImpulse(dashDirection * DashImpulse);
+        _player.Rigidbody.Velocity = dashDirection * DashSpeed;
     }
     private void EndDash()
     {
