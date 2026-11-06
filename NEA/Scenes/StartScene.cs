@@ -26,6 +26,10 @@ public class StartScene : Scene
         {
             Core.ChangeScene(new GameScene());
         }
+        else if (Core.Input.Keyboard.WasKeyJustPressed(Keys.F2))
+        {
+            Core.ChangeScene(new TilemapTestScene());
+        }
 
         base.Update(gameTime);
     }
