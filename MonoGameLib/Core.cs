@@ -6,6 +6,10 @@ using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Audio;
 using MonoGameLibrary.Input;
 using MonoGameLibrary.Scenes;
+using Gum;
+using Gum.Forms;
+using Gum.Forms.Controls;
+
 
 namespace MonoGameLibrary;
 
@@ -96,6 +100,23 @@ public class Core : Game
         Window.ClientSizeChanged += (_, _) => RecalculateViewport();
 
         base.Initialize();
+        GumService.Default.Initialize(
+            this,
+            DefaultVisualsVersion.V3
+         );
+
+        GumService.Default.ContentLoader.XnaContentManager = Content;
+
+        FrameworkElement.KeyboardsForUiControl.Add(
+            GumService.Default.Keyboard
+        );
+
+        FrameworkElement.GamePadsForUiControl.AddRange(
+            GumService.Default.Gamepads
+        );
+
+        GumService.Default.CanvasWidth = VirtualWidth;
+        GumService.Default.CanvasHeight = VirtualHeight;
     }
 
     protected override void LoadContent()
@@ -150,6 +171,7 @@ public class Core : Game
         }
 
         s_activeScene?.Update(gameTime);
+        GumService.Default.Update(gameTime);
 
         base.Update(gameTime);
     }
@@ -162,6 +184,7 @@ public class Core : Game
         GraphicsDevice.Clear(ClearColor);
 
         s_activeScene?.Draw(gameTime);
+        GumService.Default.Draw();
 
         // 2. The virtual screen is scaled and letterboxed into the real window.
         GraphicsDevice.SetRenderTarget(null);

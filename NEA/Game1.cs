@@ -5,7 +5,7 @@ namespace NEA;
 
 public class Game1 : Core
 {
-    public Game1() : base("NEA", 1600, 1200, false)
+    public Game1() : base("The Trapped Lily", 1920, 1080, false)
     {
     }
 
