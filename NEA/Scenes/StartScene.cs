@@ -55,28 +55,34 @@ public class StartScene : Scene
 
         _buttonManager = new ButtonManager();
 
+        // Start Game
         _buttonManager.AddButton(
             menuPanel,
             _startNormal,
             _startHover,
-            200,
-            () => Core.ChangeScene(new GameScene())
+            160,
+            () => Core.ChangeScene(new GameScene()),
+            width: 300
         );
 
+        // Settings
         _buttonManager.AddButton(
             menuPanel,
             _settingsNormal,
             _settingsHover,
-            310,
-            () => { }
+            300,
+            () => { },
+            width: 300
         );
 
+        // Exit
         _buttonManager.AddButton(
             menuPanel,
             _exitNormal,
             _exitHover,
-            420,
-            () => Core.Instance.Exit()
+            440,
+            () => Core.Instance.Exit(),
+            width: 300
         );
     }
 

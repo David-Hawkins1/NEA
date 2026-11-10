@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using Gum;
 using Gum.Forms.DefaultVisuals.V3;
@@ -19,13 +20,9 @@ public class ButtonManager
         Texture2D hoverTexture,
         int yPosition,
         Action onClick,
-        int width = 500)
+        int width = 300,
+        int height = 116)
     {
-        int height = (int)(
-            hoverTexture.Height *
-            (width / (float)hoverTexture.Width)
-        );
-
         Button button = new Button();
 
         button.Width = width;
@@ -35,7 +32,6 @@ public class ButtonManager
         button.X = 0;
         button.Y = yPosition;
 
-        // Hide the Gum artwork, but retain its interaction.
         ButtonVisual visual = (ButtonVisual)button.Visual;
 
         visual.Background.Visible = false;
@@ -69,14 +65,33 @@ public class ButtonManager
         if (viewport.Width <= 0 || viewport.Height <= 0)
             return;
 
+        Point screenPosition = new Point(mouse.X, mouse.Y);
+
         Point mousePosition = new Point(
             (mouse.X - viewport.X) * Core.VirtualWidth / viewport.Width,
             (mouse.Y - viewport.Y) * Core.VirtualHeight / viewport.Height
         );
 
-        foreach (ImageButton button in _buttons)
+        int hoveredIndex = -1;
+
+        if (viewport.Contains(screenPosition))
         {
-            button.Draw(spriteBatch, mousePosition);
+            for (int i = 0; i < _buttons.Count; i++)
+            {
+                if (_buttons[i].Contains(mousePosition))
+                {
+                    hoveredIndex = i;
+                    break;
+                }
+            }
+        }
+
+        for (int i = 0; i < _buttons.Count; i++)
+        {
+            _buttons[i].Draw(
+                spriteBatch,
+                i == hoveredIndex
+            );
         }
     }
 
