@@ -3,21 +3,87 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary;
 using MonoGameLibrary.Scenes;
+using MonoGameLibrary.UI;
+using MonoGameGum;
+using Gum.Forms.Controls;
 
 namespace NEA.Scenes;
 
 public class StartScene : Scene
 {
-    private const string TitleText = "The Trapped Lily";
-    private const string PromptText = "Press Enter to start";
+    private Texture2D _titleBackground;
 
-    private SpriteFont _titleFont;
-    private SpriteFont _menuFont;
+    private Texture2D _startNormal;
+    private Texture2D _startHover;
+
+    private Texture2D _settingsNormal;
+    private Texture2D _settingsHover;
+
+    private Texture2D _exitNormal;
+    private Texture2D _exitHover;
+
+    private ButtonManager _buttonManager;
 
     public override void LoadContent()
     {
-        _titleFont = Content.Load<SpriteFont>("Fonts/TitleFont");
-        _menuFont = Content.Load<SpriteFont>("Fonts/MenuFont");
+        _titleBackground =
+            Content.Load<Texture2D>("Images/TitleScreen");
+
+        _startNormal =
+            Content.Load<Texture2D>("Images/Buttons/StartGame_Normal");
+
+        _startHover =
+            Content.Load<Texture2D>("Images/Buttons/StartGame_Hover");
+
+        _settingsNormal =
+            Content.Load<Texture2D>("Images/Buttons/Settings_Normal");
+
+        _settingsHover =
+            Content.Load<Texture2D>("Images/Buttons/Settings_Hover");
+
+        _exitNormal =
+            Content.Load<Texture2D>("Images/Buttons/Exit_Normal");
+
+        _exitHover =
+            Content.Load<Texture2D>("Images/Buttons/Exit_Hover");
+
+        GumService.Default.Root.Children.Clear();
+
+        Panel menuPanel = new Panel();
+        menuPanel.Dock(Gum.Wireframe.Dock.Fill);
+        menuPanel.AddToRoot();
+
+        _buttonManager = new ButtonManager();
+
+        // Start Game
+        _buttonManager.AddButton(
+            menuPanel,
+            _startNormal,
+            _startHover,
+            160,
+            () => Core.ChangeScene(new GameScene()),
+            width: 300
+        );
+
+        // Settings
+        _buttonManager.AddButton(
+            menuPanel,
+            _settingsNormal,
+            _settingsHover,
+            300,
+            () => { },
+            width: 300
+        );
+
+        // Exit
+        _buttonManager.AddButton(
+            menuPanel,
+            _exitNormal,
+            _exitHover,
+            440,
+            () => Core.Instance.Exit(),
+            width: 300
+        );
     }
 
     public override void Update(GameTime gameTime)
@@ -36,24 +102,34 @@ public class StartScene : Scene
 
     public override void Draw(GameTime gameTime)
     {
-        Core.SpriteBatch.Begin();
+        Core.SpriteBatch.Begin(
+            samplerState: SamplerState.PointClamp
+        );
 
-        DrawCentred(_titleFont, TitleText, Core.VirtualHeight * 0.35f, Color.White);
-        DrawCentred(_menuFont, PromptText, Core.VirtualHeight * 0.6f, Color.White);
+        Core.SpriteBatch.Draw(
+            _titleBackground,
+            new Rectangle(
+                0,
+                0,
+                Core.VirtualWidth,
+                Core.VirtualHeight
+            ),
+            Color.White
+        );
+
+        _buttonManager?.Draw(Core.SpriteBatch);
 
         Core.SpriteBatch.End();
 
         base.Draw(gameTime);
     }
 
-    private static void DrawCentred(SpriteFont font, string text, float centreY, Color color)
+    public override void Dispose()
     {
-        Vector2 size = font.MeasureString(text);
+        GumService.Default.Root.Children.Clear();
 
-        Vector2 position = new Vector2(
-            (Core.VirtualWidth - size.X) / 2f,
-            centreY - size.Y / 2f);
+        _buttonManager?.Clear();
 
-        Core.SpriteBatch.DrawString(font, text, position, color);
+        base.Dispose();
     }
 }

@@ -72,7 +72,7 @@ public abstract class Scene : IDisposable
     /// <summary>
     /// Disposes of this scene.
     /// </summary>
-    public void Dispose()
+    public virtual void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
